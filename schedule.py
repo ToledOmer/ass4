@@ -49,21 +49,20 @@ def main():
             #
             available_classes = all_class_available(conn)
 
-
+            # gets all the classes where course is ended for print
             cursor.execute("""
                                    SELECT * FROM classrooms WHERE current_course_time_left=(?)
                                                   """, (0,))
             ended_courses = cursor.fetchall()
             for course in ended_courses:
                 print(course, 'is done')
-            # gets all the classes where course is ended
+            # gets all the classes where course is ended for delete using the id
             cursor.execute("""
                                    SELECT id FROM classrooms WHERE current_course_time_left=(?)
                                                   """, (0,))
             id_ended_courses = cursor.fetchall()
             for id_course in id_ended_courses:
                 # remove the course
-
                 cursor.execute("""
                                     DELETE FROM courses where id =(?)
                 """(id_course,))
