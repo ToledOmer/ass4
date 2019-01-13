@@ -34,39 +34,44 @@ def main(path):
                     )""")
 
             with open(path) as config_file:
-                for line in config_file.readlines():
-                    new_line = line.strip().split(", ")
-                    if new_line[0] == "S":
+                lines = config_file.readlines()
+                for line in lines:
+                    new_line = line.strip()
+                    line_list = new_line.split(", ")
+                    if line_list[0] == "S":
                         conn.execute("""
                                        INSERT INTO students (grade,count) VALUES (?, ?)
-                                   """, new_line[1:])
-                    if new_line[0] == "C":
+                                   """, line_list[1:])
+                    if line_list[0] == "C":
                         conn.execute("""
                                         INSERT INTO courses (id, course_name, student, number_of_students, class_id, course_length) VALUES (?, ?, ?, ?, ?, ?)
-                                """, new_line[1:])
-                    if new_line[0] == "R":
-                        new_line.append(0)
-                        new_line.append(0)
+                                """, line_list[1:])
+                    if line_list[0] == "R":
+                        line_list.append(0)
+                        line_list.append(0)
                         conn.execute("""
                                     INSERT INTO classrooms (id, location, current_course_id,current_course_time_left) VALUES (?,?, ?, ?)
-                                """, new_line[1:])
+                                """, line_list[1:])
 
             cursor.execute("""
                             SELECT * FROM courses
                     """)
             course_tuples = cursor.fetchall()
+            print("courses")
             print_table(course_tuples)
+            cursor.execute("""
+                                               SELECT * FROM classrooms
+                                       """)
+            classrooms_tuples = cursor.fetchall()
+            print("classrooms")
+            print_table(classrooms_tuples)
             cursor.execute("""
                                    SELECT * FROM students
                            """)
             students_tuples = cursor.fetchall()
+            print("students")
             print_table(students_tuples)
 
-            cursor.execute("""
-                                   SELECT * FROM classrooms
-                           """)
-            classrooms_tuples = cursor.fetchall()
-            print_table(classrooms_tuples)
         else:
             exit()
 
