@@ -3,7 +3,16 @@ import sqlite3
 import create_db
 
 DB_Path = "schedule.db"
-
+def is_in_proccess(course, _conn):
+    c = _conn.cursor()
+    courses_in_proccess = c.execute("""
+        SELECT * FROM classrooms WHERE current_course_time_left != ?
+    """, (0,)).fetchall()
+    if(len(courses_in_proccess)!=0):
+        for i in courses_in_proccess:
+            if i[2] == course[0]:
+                return True
+    return False
 
 def all_class_available(_conn):
     c = _conn.cursor()
@@ -21,6 +30,7 @@ def assign_course(_conn, course, classroom, iteration_counter):
                     UPDATE classrooms SET current_course_id=(?), current_course_time_left=(?) WHERE id=(?)
                             """, [course[0], course[5], classroom[0]])
         _conn.commit()
+
         # students allowed to take that course should be deducted
         # from the total amount of available students since each student is allowed to participate only in
         # a single course
@@ -51,6 +61,23 @@ def main():
         iteration_counter = 0
         while db_exist and (len(course_tuples) != 0):
             available_classes = all_class_available(conn)
+            # occupied classes
+            cursor.execute("""
+                                           SELECT cl.location, co.course_name, cl.id
+                                           FROM classrooms as cl 
+                                           JOIN courses as co
+                                           ON cl.current_course_id = co.id AND current_course_time_left != 0
+                                                          """)
+            occupied_classes = cursor.fetchall()
+            for i in occupied_classes:
+                cursor.execute("""SELECT current_course_time_left FROM classrooms WHERE id=(?)""", (i[2],))
+                time_left = cursor.fetchall()[0][0] - 1
+                if time_left != 1 :
+                    print("({})".format(iteration_counter), i[0] + ": occupied by", i[1])
+                cursor.execute("""UPDATE classrooms SET current_course_time_left = (?) WHERE id = (?)""",
+                               (time_left, i[2]))
+                conn.commit()
+
             cursor.execute(""" 
                                         SELECT * FROM courses  
                                                                 """)
@@ -61,20 +88,7 @@ def main():
                 course = cursor.fetchone()
                 assign_course(conn, course, classroom, iteration_counter)
 
-            # occupied classes
-            cursor.execute("""
-                               SELECT cl.location, co.course_name, cl.id
-                               FROM classrooms as cl 
-                               JOIN courses as co
-                               ON cl.current_course_id = co.id AND current_course_time_left != 0
-                                              """)
-            occupied_classes = cursor.fetchall()
-            for i in occupied_classes:
-                print("({})".format(iteration_counter), i[0]+": occupied by", i[1])
-                cursor.execute("""SELECT current_course_time_left FROM classrooms WHERE id=(?)""", (i[2],))
-                time_left = cursor.fetchall()[0][0]-1
-                cursor.execute("""UPDATE classrooms SET current_course_time_left = (?) WHERE id = (?)""", (time_left, i[2]))
-                conn.commit()
+
 
             # gets all the classes where course is ended for print
             cursor.execute("""
@@ -91,12 +105,19 @@ def main():
                 cursor.execute("""
                                                     DELETE FROM courses WHERE id =(?)
                                 """, (course[4],))
+                cursor.execute("""UPDATE classrooms SET current_course_id = (?) WHERE id = (?)""",
+                               (0, course[0]))
                 conn.commit()
+
                 cursor.execute(""" 
                                             SELECT * FROM courses  
                                                                     """)
                 new_course = cursor.fetchone()
-                assign_course(conn, new_course, course[:4], iteration_counter)
+                while len(new_course) != 0:
+                    while is_in_proccess(new_course, conn):
+                            new_course = cursor.fetchone()
+                                if not is_in_proccess(new_course, conn) :
+                                    assign_course(conn, new_course, course[:4], iteration_counter)
 
             # print tables
             cursor.execute("""
