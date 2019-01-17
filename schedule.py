@@ -24,7 +24,7 @@ def all_class_available(_conn):
 
 def assign_course(_conn, course, classroom, iteration_counter):
     if course:
-        print("({})".format(iteration_counter), classroom[1] + ": ", course[1], "is schedule to start")
+        print("({})".format(iteration_counter), classroom[1] + ":", course[1], "is schedule to start")
         c = _conn.cursor()
         c.execute("""
                     UPDATE classrooms SET current_course_id=(?), current_course_time_left=(?) WHERE id=(?)
