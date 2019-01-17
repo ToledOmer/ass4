@@ -8,7 +8,7 @@ def is_in_proccess(course, _conn):
     courses_in_proccess = c.execute("""
         SELECT * FROM classrooms WHERE current_course_time_left != ?
     """, (0,)).fetchall()
-    if(len(courses_in_proccess)!=0):
+    if courses_in_proccess :
         for i in courses_in_proccess:
             if i[2] == course[0]:
                 return True
@@ -114,11 +114,11 @@ def main():
                 for classroom in available_classes:
                     cursor.execute(""" 
                                         SELECT * FROM courses WHERE class_id=(?) 
-                                                                """, (classroom[0],))
-                    course = cursor.fetchone()
-                    if course:
-                        if not is_in_proccess(course,conn):
-                            assign_course(conn, course, classroom, iteration_counter)
+                                                                """, (course[0],))
+                    ncourse = cursor.fetchone()
+                    if ncourse:
+                        if not is_in_proccess(ncourse, conn):
+                            assign_course(conn, ncourse, classroom, iteration_counter)
 
 
             # print tables
