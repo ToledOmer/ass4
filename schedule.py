@@ -72,7 +72,7 @@ def main():
             for i in occupied_classes:
                 cursor.execute("""SELECT current_course_time_left FROM classrooms WHERE id=(?)""", (i[2],))
                 time_left = cursor.fetchall()[0][0] - 1
-                if time_left != 1 :
+                if time_left != 0 :
                     print("({})".format(iteration_counter), i[0] + ": occupied by", i[1])
                 cursor.execute("""UPDATE classrooms SET current_course_time_left = (?) WHERE id = (?)""",
                                (time_left, i[2]))
@@ -109,15 +109,17 @@ def main():
                                (0, course[0]))
                 conn.commit()
 
-                cursor.execute(""" 
-                                            SELECT * FROM courses  
-                                                                    """)
-                new_course = cursor.fetchone()
-                while len(new_course) != 0:
-                    while is_in_proccess(new_course, conn):
-                            new_course = cursor.fetchone()
-                                if not is_in_proccess(new_course, conn) :
-                                    assign_course(conn, new_course, course[:4], iteration_counter)
+
+                available_classes = all_class_available(conn)
+                for classroom in available_classes:
+                    cursor.execute(""" 
+                                        SELECT * FROM courses WHERE class_id=(?) 
+                                                                """, (classroom[0],))
+                    course = cursor.fetchone()
+                    if course:
+                        if not is_in_proccess(course,conn):
+                            assign_course(conn, course, classroom, iteration_counter)
+
 
             # print tables
             cursor.execute("""
